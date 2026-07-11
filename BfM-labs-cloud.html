@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BfM Health - Orthostatic &amp; Metabolic Log</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #f4f7f6;
+      color: #333;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    h1, h2 {
+      color: #2c3e50;
+      border-bottom: 2px solid #34495e;
+      padding-bottom: 5px;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+    label {
+      font-weight: 600;
+      font-size: 0.9em;
+      margin-bottom: 5px;
+      color: #555;
+    }
+    input, select, textarea {
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 1em;
+    }
+    .full-width {
+      grid-column: 1 / -1;
+    }
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    button {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 4px;
+      font-size: 1em;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .btn-submit {
+      background-color: #27ae60;
+      color: white;
+    }
+    .btn-submit:hover { background-color: #219653; }
+    .btn-export {
+      background-color: #2980b9;
+      color: white;
+    }
+    .btn-export:hover { background-color: #2471a3; }
+    .btn-clear {
+      background-color: #e74c3c;
+      color: white;
+      margin-left: auto;
+    }
+    .btn-clear:hover { background-color: #c0392b; }
+    .btn-delete {
+      background-color: transparent;
+      color: #c0392b;
+      border: 1px solid #c0392b;
+      padding: 4px 8px;
+      font-size: 0.85em;
+      font-weight: normal;
+    }
+    .btn-delete:hover { background-color: #c0392b; color: white; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+    th {
+      background-color: #ecf0f1;
+      font-weight: 600;
+    }
+    tbody tr:hover { background-color: #f9f9f9; }
+    #authScreen {
+      max-width: 360px;
+      margin: 80px auto;
+      background: #fff;
+      padding: 24px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    #authScreen h2 { margin-top: 0; }
+    #authScreen input {
+      width: 100%;
+      box-sizing: border-box;
+      margin-bottom: 10px;
+    }
+    #authError {
+      color: #c0392b;
+      font-size: 0.9em;
+      min-height: 1.2em;
+    }
+    #appRoot { display: none; }
+    #syncBar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85em;
+      color: #666;
+      margin-bottom: 10px;
+    }
+    #syncStatus.offline { color: #c0392b; font-weight: 600; }
+    #syncStatus.synced { color: #27ae60; font-weight: 600; }
+    #signOutBtn {
+      background: none;
+      border: none;
+      color: #2980b9;
+      text-decoration: underline;
+      font-weight: normal;
+      padding: 0;
+      cursor: pointer;
+    }
+    </style>
+  </head>
+  <body>
+
+    <div id="authScreen">
+      <h2>BfM Health Log</h2>
+    <p style="font-size:0.9em;color:#666;">Sign in to sync your log across your devices.</p>p>
+    <div class="form-group">
+    <label for="authEmail">Email</label>label>
+    <input type="email" id="authEmail" autocomplete="username">
+    </div>div>
+    <div class="form-group">
+    <label for="authPassword">Password</label>label>
+    <input type="password" id="authPassword" autocomplete="current-password">
+    </div>div>
+    <div id="authError"></div>div>
+    <div class="button-group">
+    <button class="btn-submit" onclick="doSignIn()">Sign In</button>button>
+    <button class="btn-export" onclick="doSignUp()">Create Account</button>button>
+    </div>div>
+    <p style="font-size:0.8em;color:#999;margin-top:14px;">
+    First time on any device: use "Create Account" once with the email/password
+    you want to use everywhere. On every other device, just "Sign In" with the
+    same email/password.
+    </p>p>
+    </div>div>
+  
+  <div id="appRoot">
+  
+  <div id="syncBar">
+  <span>Signed in as <strong id="userEmailLabel"></strong>strong> &middot; <span id="syncStatus">connecting&hellip;</span></span>
+  <button id="signOutBtn" onclick="doSignOut()">Sign out</button>button>
+  </div>div>
+  
+  <h1>BfM Health: Orthostatic &amp; Metabolic Log</h1>
+  
+  <div class="form-grid">
+  <div class="form-group">
+  <label for="entryDate">Date</label>label>
+  <input type="date" id="entryDate" required>
+  </div>div>
+  <div class="form-group">
+  <label for="entryTime">Time</label>label>
+  <select id="entryTime">
+  <option value="q am">q am</option>option>
+  <option value="q hs">q hs</option>option>
+  <option value="PRN">PRN</option>option>
+  </select>select>
+  </div>div>
+  <div class="form-group">
+  <label for="weight">Weight (lbs) - AM only</label>label>
+  <input type="number" step="0.1" id="weight" placeholder="e.g., 185.5">
+  </div>div>
+  
+  <div class="form-group">
+  <label for="restingPulse">Resting Pulse (bpm)</label>label>
+  <input type="number" id="restingPulse" placeholder="e.g., 65">
+  </div>div>
+  <div class="form-group">
+  <label for="lyingBP">Lying BP (Sys/Dia)</label>label>
+  <input type="text" id="lyingBP" placeholder="e.g., 120/80">
+  </div>div>
+  
+  <div class="form-group">
+  <label for="standingPulse">Standing Pulse (bpm)</label>label>
+  <input type="number" id="standingPulse" placeholder="e.g., 85">
+  </div>div>
+  <div class="form-group">
+  <label for="standingBP">Standing BP (Sys/Dia)</label>label>
+  <input type="text" id="standingBP" placeholder="e.g., 105/65">
+  </div>div>
+  
+  <div class="form-group full-width">
+  <label for="comments">Comments &amp; Symptoms (THC dose, cloudiness, tennis, etc.)</label>label>
+  <textarea id="comments" rows="2" placeholder="e.g., Post-tennis, 5mg THC, mild cloudiness upon standing"></textarea>
+  </div>div>
+  
+  <div class="form-group full-width button-group">
+  <button class="btn-submit" onclick="saveEntry()">Save Entry</button>button>
+  <button class="btn-export" onclick="exportCSV()">Download CSV</button>button>
+  <button class="btn-clear" onclick="clearData()">Clear All Data</button>button>
+  </div>div>
+  </div>div>
+  
+  <h2>Recorded Data</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Date</th>
+    <th>Time</th>
+    <th>Weight</th>
+    <th>Resting HR</th>
+    <th>Lying BP</th>
+    <th>Standing HR</th>
+    <th>Standing BP</th>
+    <th>Comments</th>
+    <th></th>
+      </tr>
+    </thead>
+  <tbody id="dataTableBody">
+  </tbody>tbody>
+  </table>
+  </div>div>
+  
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBcUcOAEzCqS4_v3Lkkf1O3zs-wD78v584",
+      authDomain: "bfm-health.firebaseapp.com",
+      projectId: "bfm-health",
+      storageBucket: "bfm-health.firebasestorage.app",
+      messagingSenderId: "389856979977",
+      appId: "1:389856979977:web:f5e48a2820993f9a179cd8",
+      measurementId: "G-BTT2M3YLL8"
+    };
+
+    const CONFIG_IS_PLACEHOLDER = firebaseConfig.apiKey === "YOUR_API_KEY";
+
+    if (CONFIG_IS_PLACEHOLDER) {
+      document.getElementById('authScreen').innerHTML = '<h2>Setup needed</h2><p>Placeholder config.</p>';
+    } else {
+      firebase.initializeApp(firebaseConfig);
+    }
+
+    const auth = CONFIG_IS_PLACEHOLDER ? null : firebase.auth();
+    const db = CONFIG_IS_PLACEHOLDER ? null : firebase.firestore();
+
+    if (db) {
+      db.enablePersistence({ synchronizeTabs: true }).catch(err => {
+        console.warn('Offline persistence unavailable:', err.code);
+      });
+    }
+
+    let unsubscribeEntries = null;
+    let logData = [];
+
+    function authErrorMessage(err) {
+      const map = {
+        'auth/invalid-email': 'That email address looks invalid.',
+        'auth/missing-password': 'Enter a password.',
+        'auth/weak-password': 'Password should be at least 6 characters.',
+        'auth/email-already-in-use': 'That email already has an account - try Sign In instead.',
+        'auth/invalid-credential': 'Incorrect email or password.',
+        'auth/wrong-password': 'Incorrect email or password.',
+        'auth/user-not-found': 'No account with that email yet - try Create Account.',
+        'auth/too-many-requests': 'Too many attempts - wait a bit and try again.'
+      };
+      return map[err.code] || err.message;
+    }
+
+    function doSignIn() {
+      const email = document.getElementById('authEmail').value.trim();
+      const password = document.getElementById('authPassword').value;
+      document.getElementById('authError').textContent = '';
+      auth.signInWithEmailAndPassword(email, password)
+      .catch(err => { document.getElementById('authError').textContent = authErrorMessage(err); });
+    }
+
+    function doSignUp() {
+      const email = document.getElementById('authEmail').value.trim();
+      const password = document.getElementById('authPassword').value;
+      document.getElementById('authError').textContent = '';
+      auth.createUserWithEmailAndPassword(email, password)
+      .catch(err => { document.getElementById('authError').textContent = authErrorMessage(err); });
+    }
+
+    function doSignOut() {
+      if (unsubscribeEntries) { unsubscribeEntries(); unsubscribeEntries = null; }
+      auth.signOut();
+    }
+
+    if (auth) {
+      auth.onAuthStateChanged(user => {
+        if (user) {
+          document.getElementById('authScreen').style.display = 'none';
+          document.getElementById('appRoot').style.display = 'block';
+          document.getElementById('userEmailLabel').textContent = user.email;
+          startListening(user.uid);
+          document.getElementById('entryDate').value = localDateString(new Date());
+        } else {
+          document.getElementById('authScreen').style.display = 'block';
+          document.getElementById('appRoot').style.display = 'none';
+          if (unsubscribeEntries) { unsubscribeEntries(); unsubscribeEntries = null; }
+          logData = [];
+        }
+      });
+    }
+
+    function startListening(uid) {
+      const entriesRef = db.collection('users').doc(uid).collection('entries');
+      unsubscribeEntries = entriesRef.orderBy('date').orderBy('createdAt').onSnapshot(
+        snapshot => {
+          logData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          renderTable();
+          const statusEl = document.getElementById('syncStatus');
+          statusEl.textContent = snapshot.metadata.fromCache ? 'offline (cached)' : 'synced';
+          statusEl.className = snapshot.metadata.fromCache ? 'offline' : 'synced';
+        },
+        err => {
+          console.error('Firestore listen error:', err);
+          const statusEl = document.getElementById('syncStatus');
+          statusEl.textContent = 'sync error - see console';
+          statusEl.className = 'offline';
+        }
+        );
+    }
+
+    function currentUid() {
+      return auth && auth.currentUser ? auth.currentUser.uid : null;
+    }
+
+    function escapeHtml(value) {
+      const div = document.createElement('div');
+      div.textContent = value === undefined || value === null ? '' : String(value);
+      return div.innerHTML;
+    }
+
+    function csvField(value) {
+      let s = value === undefined || value === null ? '' : String(value);
+      if (/^[=+\-@]/.test(s)) {
+        s = "'" + s;
+      }
+      return '"' + s.replace(/"/g, '""') + '"';
+    }
+
+    function localDateString(d) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('dataTableBody');
+      tbody.innerHTML = '';
+      logData.forEach(entry => {
+        const row = `<tr>
+        <td>${escapeHtml(entry.date)}</td>
+        <td>${escapeHtml(entry.time)}</td>
+        <td>${escapeHtml(entry.weight) || '-'}</td>
+        <td>${escapeHtml(entry.restingPulse) || '-'}</td>
+        <td>${escapeHtml(entry.lyingBP) || '-'}</td>
+        <td>${escapeHtml(entry.standingPulse) || '-'}</td>
+        <td>${escapeHtml(entry.standingBP) || '-'}</td>
+        <td>${escapeHtml(entry.comments) || '-'}</td>
+        <td><button class="btn-delete" onclick="deleteEntry('${entry.id}')">Delete</button></td>
+        </tr>`;
+        tbody.innerHTML += row;
+      });
+    }
+
+    function saveEntry() {
+      const uid = currentUid();
+      if (!uid) { return; }
+
+      const newEntry = {
+        date: document.getElementById('entryDate').value,
+        time: document.getElementById('entryTime').value,
+        weight: document.getElementById('weight').value,
+        restingPulse: document.getElementById('restingPulse').value,
+        lyingBP: document.getElementById('lyingBP').value,
+        standingPulse: document.getElementById('standingPulse').value,
+        standingBP: document.getElementById('standingBP').value,
+        comments: document.getElementById('comments').value,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      };
+
+      if (!newEntry.date) {
+        alert("Please select a date.");
+        return;
+      }
+
+      db.collection('users').doc(uid).collection('entries').add(newEntry)
+      .catch(err => alert('Could not save (are you online?): ' + err.message));
+
+      document.getElementById('weight').value = '';
+      document.getElementById('restingPulse').value = '';
+      document.getElementById('lyingBP').value = '';
+      document.getElementById('standingPulse').value = '';
+      document.getElementById('standingBP').value = '';
+      document.getElementById('comments').value = '';
+    }
+
+    function deleteEntry(id) {
+      const uid = currentUid();
+      if (!uid) { return; }
+      if (confirm("Delete this single entry? This cannot be undone unless you have exported a CSV.")) {
+        db.collection('users').doc(uid).collection('entries').doc(id).delete()
+        .catch(err => alert('Could not delete (are you online?): ' + err.message));
+      }
+    }
+
+    function exportCSV() {
+      if (logData.length === 0) {
+        alert("No data to export.");
+        return;
+      }
+
+      const headers = ["Date", "Time", "Weight", "Resting HR", "Lying BP", "Standing HR", "Standing BP", "Comments"];
+      const lines = [headers.map(csvField).join(",")];
+
+      logData.forEach(e => {
+        const row = [e.date, e.time, e.weight, e.restingPulse, e.lyingBP, e.standingPulse, e.standingBP, e.comments]
+        .map(csvField)
+        .join(",");
+        lines.push(row);
+      });
+
+      const csvContent = lines.join("\r\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", "BfM_Orthostatic_Log.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+
+    function clearData() {
+      const uid = currentUid();
+      if (!uid) { return; }
+      if (!confirm("Are you sure you want to delete ALL recorded data, on every device? This cannot be undone unless you have exported a CSV.")) {
+        return;
+      }
+      const entriesRef = db.collection('users').doc(uid).collection('entries');
+      entriesRef.get().then(snapshot => {
+        const batch = db.batch();
+        snapshot.docs.forEach(doc => batch.delete(doc.ref));
+        return batch.commit();
+      }).catch(err => alert('Could not clear (are you online?): ' + err.message));
+    }
+  </script>
+  </body>
+</html>html>
+
+  </script></th></th>
+      </tr>
+    </thead>
+  </table></span></h2>
+  </body>
+  </style></title>
+  </head>
